@@ -12,5 +12,5 @@ import java.nio.file.Path;
  * the time in the play log entry is recommended to determine if an entry is new.
  */
 public interface HermesRestrictedPlayLogListener extends KerykeionListener {
-    void onLivePlayLogEntry(JsonObject instanceInfo, Path worldPath, String line);
+    void onLivePlayLogEntry(JsonObject instanceInfo, Path worldPath, byte[] lineBytes);
 }

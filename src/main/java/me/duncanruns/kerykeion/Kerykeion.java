@@ -114,7 +114,7 @@ public final class Kerykeion {
     }
 
     private static void tickLivePlayLog() {
-        livePlayLogTracker.tick(entryInfo -> livePlayLogListeners.forEach(lis -> lis.onLivePlayLogEntry(entryInfo.instanceInfo, entryInfo.worldPath, entryInfo.line)));
+        livePlayLogTracker.tick(entryInfo -> livePlayLogListeners.forEach(lis -> lis.onLivePlayLogEntry(entryInfo.instanceInfo, entryInfo.worldPath, entryInfo.line.clone())));
     }
 
     private static void tickState() {

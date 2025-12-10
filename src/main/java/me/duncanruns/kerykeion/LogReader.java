@@ -1,5 +1,6 @@
 package me.duncanruns.kerykeion;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
@@ -10,6 +11,7 @@ class LogReader {
     private final Path path;
     private RandomAccessFile file = null;
     private boolean firstRead = true;
+    private final ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream(128);
 
     public LogReader(Path path) {
         this.path = path;
@@ -24,9 +26,9 @@ class LogReader {
         }
         long progress;
         while ((progress = this.file.getFilePointer()) < this.file.length()) {
-            String line = this.readLine();
-            if (!line.endsWith("\n")) {
-                // Line hasn't finished writing yet
+            byte[] line = this.readLine();
+            if (line.length == 0 || line[line.length - 1] != '\n') {
+                // Line hasn't finished writing yet or no bytes were read
                 this.file.seek(progress);
                 break;
             }
@@ -34,15 +36,18 @@ class LogReader {
         }
     }
 
-    private String readLine() throws IOException {
-        StringBuilder sb = new StringBuilder(256);
-        int b;
-        do {
-            b = this.file.read();
-            if (b == -1) break;
-            sb.append((char) b);
-        } while (b != '\n');
-        return sb.toString();
+    private byte[] readLine() throws IOException {
+        try {
+            int c;
+            do {
+                c = this.file.read();
+                if (c == -1) break;
+                this.lineBuffer.write(c);
+            } while (c != '\n');
+            return this.lineBuffer.toByteArray();
+        } finally {
+            this.lineBuffer.reset();
+        }
     }
 
     public void close() {
@@ -58,10 +63,10 @@ class LogReader {
     }
 
     static class EntryInfo {
-        final String entry;
+        final byte[] entry;
         final boolean isNew;
 
-        public EntryInfo(String entry, boolean isNew) {
+        public EntryInfo(byte[] entry, boolean isNew) {
             this.entry = entry;
             this.isNew = isNew;
         }

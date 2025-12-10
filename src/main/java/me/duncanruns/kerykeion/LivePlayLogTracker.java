@@ -84,9 +84,9 @@ class LivePlayLogTracker implements HermesWorldLogListener {
     static class EntryInfo {
         final JsonObject instanceInfo;
         final Path worldPath;
-        final String line;
+        final byte[] line;
 
-        public EntryInfo(JsonObject instanceInfo, Path worldPath, String line) {
+        public EntryInfo(JsonObject instanceInfo, Path worldPath, byte[] line) {
             this.instanceInfo = instanceInfo;
             this.worldPath = worldPath;
             this.line = line;
