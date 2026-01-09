@@ -13,10 +13,10 @@ import java.util.concurrent.Executor;
  * the time in the play log entry is recommended to determine if an entry is new.
  */
 public interface HermesRestrictedPlayLogListener extends KerykeionListener {
-    void onLivePlayLogEntry(JsonObject instanceInfo, Path worldPath, byte[] lineBytes);
-
     static HermesRestrictedPlayLogListener wrap(HermesRestrictedPlayLogListener listener, Executor executor) {
-        if(executor == null) return listener;
+        if (executor == null) return listener;
         return (instanceInfo, worldPath, lineBytes) -> executor.execute(() -> listener.onLivePlayLogEntry(instanceInfo, worldPath, lineBytes));
     }
+
+    void onLivePlayLogEntry(JsonObject instanceInfo, Path worldPath, byte[] lineBytes);
 }
