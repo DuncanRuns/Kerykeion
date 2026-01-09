@@ -47,6 +47,8 @@ public final class Kerykeion {
      * careful not to rely on the tick interval being what you expect.
      * <p>
      * Instance listening will only be run at minimum every 1000ms, regardless of the used tick interval.
+     * <p>
+     * It is highly recommended to offload to an executor to avoid blocking Kerykeion's thread.
      *
      * @param listener             The listener to add
      * @param requiredTickInterval The tick interval required by this listener in milliseconds
