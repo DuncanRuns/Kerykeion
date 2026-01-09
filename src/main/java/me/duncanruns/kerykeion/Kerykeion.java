@@ -78,6 +78,10 @@ public final class Kerykeion {
         if (!matched) {
             throw new IllegalArgumentException("Unknown listener type! Please implement one of the more specific interfaces.");
         }
+        requireTickInterval(requiredTickInterval);
+    }
+
+    private static void requireTickInterval(long requiredTickInterval) {
         tickInterval = Math.min(Math.max(requiredTickInterval, 1), tickInterval);
     }
 
