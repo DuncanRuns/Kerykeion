@@ -6,12 +6,14 @@ import me.duncanruns.kerykeion.listeners.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+@SuppressWarnings("unused")
 public final class Kerykeion {
     public static final Gson GSON = new Gson();
 
@@ -48,28 +50,29 @@ public final class Kerykeion {
      *
      * @param listener             The listener to add
      * @param requiredTickInterval The tick interval required by this listener in milliseconds
+     * @param executor             The executor to use for this listener, can be null to listen on Kerykeion's thread
      * @throws IllegalStateException    if Kerykeion has already been started
      * @throws IllegalArgumentException if the listener is not one of the more specific interfaces
      */
-    public static synchronized void addListener(KerykeionListener listener, long requiredTickInterval) {
+    public static synchronized void addListener(KerykeionListener listener, long requiredTickInterval, Executor executor) {
         if (started) {
             throw new IllegalStateException("Kerykeion already started, listeners need to be registered earlier!");
         }
         boolean matched = false;
         if (listener instanceof HermesInstanceListener) {
-            instanceListeners.add((HermesInstanceListener) listener);
+            instanceListeners.add(HermesInstanceListener.wrap((HermesInstanceListener) listener, executor));
             matched = true;
         }
         if (listener instanceof HermesStateListener) {
-            stateListeners.add((HermesStateListener) listener);
+            stateListeners.add(HermesStateListener.wrap((HermesStateListener) listener, executor));
             matched = true;
         }
         if (listener instanceof HermesWorldLogListener) {
-            worldLogListeners.add((HermesWorldLogListener) listener);
+            worldLogListeners.add(HermesWorldLogListener.wrap((HermesWorldLogListener) listener, executor));
             matched = true;
         }
         if (listener instanceof HermesRestrictedPlayLogListener) {
-            livePlayLogListeners.add((HermesRestrictedPlayLogListener) listener);
+            livePlayLogListeners.add(HermesRestrictedPlayLogListener.wrap((HermesRestrictedPlayLogListener) listener, executor));
             if (!worldLogListeners.contains(livePlayLogTracker)) {
                 worldLogListeners.add(livePlayLogTracker);
             }
@@ -95,7 +98,7 @@ public final class Kerykeion {
             throw new IllegalStateException("No listeners added! Add at least one listener before starting!");
         }
 
-        executor = Executors.newSingleThreadScheduledExecutor();
+        executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Kerykeion"));
         executor.scheduleAtFixedRate(Kerykeion::tick, tickInterval, tickInterval, TimeUnit.MILLISECONDS);
         started = true;
     }
