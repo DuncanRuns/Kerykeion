@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 
 public class KerykeionUtil {
     public static Path resolveGameDirRelativePath(Path gameDir, JsonObject relPathObj) {
+        if (relPathObj == null) return null;
         boolean relative = relPathObj.get("relative").getAsBoolean();
         String pathString = relPathObj.get("path").getAsString();
         if (relative) {

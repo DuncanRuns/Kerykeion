@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 class WorldLogTracker {
@@ -21,8 +22,9 @@ class WorldLogTracker {
         for (HermesInstance instance : instances) {
             JsonLogReader worldLog = this.worldLogs.computeIfAbsent(
                     instance,
-                    i -> new JsonLogReader(instance.getWorldLogPath())
+                    i -> Optional.ofNullable(instance.getWorldLogPath()).map(JsonLogReader::new).orElse(null)
             );
+            if (worldLog == null) continue;
             try {
                 worldLog.read(e -> consumer.accept(new EntryInfo(e.entry, instance, e.isNew)));
             } catch (IOException e) {
