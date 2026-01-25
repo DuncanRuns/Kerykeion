@@ -1,6 +1,7 @@
 package me.duncanruns.kerykeion.listeners;
 
 import com.google.gson.JsonObject;
+import me.duncanruns.kerykeion.KerykeionUtil;
 
 import java.util.concurrent.Executor;
 
@@ -10,12 +11,12 @@ public interface HermesInstanceListener extends KerykeionListener {
         return new HermesInstanceListener() {
             @Override
             public void onNewInstance(JsonObject instanceInfo, boolean isNew) {
-                executor.execute(() -> listener.onNewInstance(instanceInfo, isNew));
+                KerykeionUtil.executeIgnore(executor, () -> listener.onNewInstance(instanceInfo, isNew));
             }
 
             @Override
             public void onInstanceClosed(JsonObject instanceInfo) {
-                executor.execute(() -> listener.onInstanceClosed(instanceInfo));
+                KerykeionUtil.executeIgnore(executor, () -> listener.onInstanceClosed(instanceInfo));
             }
         };
     }

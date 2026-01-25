@@ -1,6 +1,7 @@
 package me.duncanruns.kerykeion.listeners;
 
 import com.google.gson.JsonObject;
+import me.duncanruns.kerykeion.KerykeionUtil;
 
 import java.nio.file.Path;
 import java.util.concurrent.Executor;
@@ -15,7 +16,7 @@ import java.util.concurrent.Executor;
 public interface HermesRestrictedPlayLogListener extends KerykeionListener {
     static HermesRestrictedPlayLogListener wrap(HermesRestrictedPlayLogListener listener, Executor executor) {
         if (executor == null) return listener;
-        return (instanceInfo, worldPath, lineBytes) -> executor.execute(() -> listener.onLivePlayLogEntry(instanceInfo, worldPath, lineBytes));
+        return (instanceInfo, worldPath, lineBytes) -> KerykeionUtil.executeIgnore(executor, () -> listener.onLivePlayLogEntry(instanceInfo, worldPath, lineBytes));
     }
 
     void onLivePlayLogEntry(JsonObject instanceInfo, Path worldPath, byte[] lineBytes);

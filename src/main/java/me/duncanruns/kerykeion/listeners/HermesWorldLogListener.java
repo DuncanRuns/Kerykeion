@@ -1,13 +1,14 @@
 package me.duncanruns.kerykeion.listeners;
 
 import com.google.gson.JsonObject;
+import me.duncanruns.kerykeion.KerykeionUtil;
 
 import java.util.concurrent.Executor;
 
 public interface HermesWorldLogListener extends KerykeionListener {
     static HermesWorldLogListener wrap(HermesWorldLogListener listener, Executor executor) {
         if (executor == null) return listener;
-        return (instanceInfo, entry, isNew) -> executor.execute(() -> listener.onWorldLogEntry(instanceInfo, entry, isNew));
+        return (instanceInfo, entry, isNew) -> KerykeionUtil.executeIgnore(executor, () -> listener.onWorldLogEntry(instanceInfo, entry, isNew));
     }
 
     /**
