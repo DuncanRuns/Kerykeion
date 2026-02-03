@@ -93,13 +93,25 @@ public final class Kerykeion {
     /**
      * Starts Kerykeion. Listeners need to be added before this is called. The first tick will happen after the tick interval.
      */
-    public static synchronized void start() {
+    public static void start() {
+        start(false);
+    }
+
+    /**
+     * Starts Kerykeion. Listeners need to be added before this is called. The first tick will happen after the tick interval.
+     *
+     * @param tickOnce If true, Kerykeion will tick once on the calling thread before starting the scheduled ticks.
+     */
+    public static synchronized void start(boolean tickOnce) {
         if (started) return;
 
         if (instanceListeners.isEmpty() && stateListeners.isEmpty() && worldLogListeners.isEmpty() && livePlayLogListeners.isEmpty()) {
             throw new IllegalStateException("No listeners added! Add at least one listener before starting!");
         }
 
+        if (tickOnce) {
+            tick();
+        }
         executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Kerykeion"));
         executor.scheduleAtFixedRate(Kerykeion::tick, tickInterval, tickInterval, TimeUnit.MILLISECONDS);
         started = true;
