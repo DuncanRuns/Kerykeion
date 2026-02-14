@@ -7,9 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -27,8 +25,8 @@ public final class Kerykeion {
 
 
     private static boolean started = false; // has been started at any point in the past even if it was stopped
-    private static boolean stopped = false;
-    private static ScheduledExecutorService executor = null;
+    private static volatile boolean stopped = false;
+    private static final AtomicBoolean shouldRun = new AtomicBoolean(true);
 
     private static final InstanceTracker instanceTracker = new InstanceTracker();
     private static final WorldLogTracker worldLogTracker = new WorldLogTracker();
@@ -112,9 +110,21 @@ public final class Kerykeion {
         if (tickOnce) {
             tick();
         }
-        executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Kerykeion"));
-        executor.scheduleAtFixedRate(Kerykeion::tick, tickInterval, tickInterval, TimeUnit.MILLISECONDS);
+        new Thread(Kerykeion::mainLoop, "Kerykeion").start();
         started = true;
+    }
+
+    @SuppressWarnings("BusyWait")
+    private static void mainLoop() {
+        while (shouldRun.get()) {
+            tick();
+            try {
+                Thread.sleep(tickInterval);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        stopped = true;
     }
 
     private static synchronized void tick() {
@@ -165,11 +175,18 @@ public final class Kerykeion {
         );
     }
 
-    public static synchronized void stop() {
-        if (!started) return;
-        executor.shutdown();
-        executor = null;
-        stopped = true;
+    public static synchronized boolean stop() {
+        if (!started) return false;
+        shouldRun.set(false);
+        int tries;
+        for (tries = 0; tries < 100 && !stopped; tries++){
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return tries < 100;
     }
 
     public static boolean hasStarted() {
