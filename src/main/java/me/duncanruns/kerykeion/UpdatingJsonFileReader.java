@@ -12,7 +12,7 @@ class UpdatingJsonFileReader {
     private final Path path;
     private long lastModified = 0;
     private int failures = 0;
-    private JsonObject json = null;
+    private String lastContents = null;
 
     public UpdatingJsonFileReader(Path path) {
         this.path = path;
@@ -27,11 +27,19 @@ class UpdatingJsonFileReader {
      */
     public Optional<JsonObject> read() throws IOException, JsonSyntaxException {
         if (!Files.exists(this.path)) return Optional.empty();
+
         long mTime = Files.getLastModifiedTime(this.path).toMillis();
-        if (this.lastModified == mTime) return Optional.empty();
+        if (this.lastModified == mTime && (System.currentTimeMillis() - this.lastModified) > 50)
+            return Optional.empty();
+
         String contents = new String(Files.readAllBytes(this.path));
+        if (contents.equals(this.lastContents))
+            return Optional.empty();
+        this.lastContents = contents;
+
+        JsonObject json;
         try {
-            this.json = Kerykeion.GSON.fromJson(contents, JsonObject.class);
+            json = Kerykeion.GSON.fromJson(contents, JsonObject.class);
         } catch (JsonSyntaxException e) {
             this.failures++;
             if (this.failures > 10) { // Extremely unlikely that 10 reads in a row happen in the middle of a write (please do not punish me murphy)
@@ -40,12 +48,9 @@ class UpdatingJsonFileReader {
             }
             return Optional.empty();
         }
-        if(this.json == null) return Optional.empty(); // Invalid json, force a re-read next time
-        this.lastModified = mTime;
-        return Optional.of(this.json);
-    }
 
-    public JsonObject getStoredJson() {
-        return this.json;
+        if (json == null) return Optional.empty();
+        this.lastModified = mTime;
+        return Optional.of(json);
     }
 }
