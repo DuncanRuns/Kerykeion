@@ -41,7 +41,7 @@ class UpdatingJsonFileReader {
             return Optional.empty();
         }
         this.lastModified = mTime;
-        return Optional.of(this.json);
+        return Optional.ofNullable(this.json);
     }
 
     public JsonObject getStoredJson() {
