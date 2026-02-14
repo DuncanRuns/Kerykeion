@@ -116,15 +116,22 @@ public final class Kerykeion {
 
     @SuppressWarnings("BusyWait")
     private static void mainLoop() {
-        while (shouldRun.get()) {
-            tick();
-            try {
-                Thread.sleep(tickInterval);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        try {
+            while (shouldRun.get()) {
+                tick();
+                try {
+                    Thread.sleep(tickInterval);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
+        } catch (Throwable t) {
+            errorLogger.accept("Kerykeion encountered an error and will stop!", t);
+            throw t;
+        } finally {
+            stopped = true;
+            shouldRun.set(false);
         }
-        stopped = true;
     }
 
     private static synchronized void tick() {
@@ -179,7 +186,7 @@ public final class Kerykeion {
         if (!started) return false;
         shouldRun.set(false);
         int tries;
-        for (tries = 0; tries < 100 && !stopped; tries++){
+        for (tries = 0; tries < 100 && !stopped; tries++) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
