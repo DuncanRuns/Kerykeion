@@ -25,6 +25,7 @@ class InstanceTracker {
     }
 
     private void checkInstancesFolder(TickResult result) {
+        if (Files.notExists(HERMES_GLOBAL_INSTANCES_PATH)) return;
         try (Stream<Path> list = Files.list(HERMES_GLOBAL_INSTANCES_PATH)) {
             List<Path> infoFiles = list
                     .filter(Files::isRegularFile)
