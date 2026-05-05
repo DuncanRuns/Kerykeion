@@ -31,7 +31,7 @@ class InstanceTracker {
                     .filter(path -> path.getFileName().toString().endsWith(".json"))
                     .collect(Collectors.toList());
             List<String> infoFileNames = infoFiles.stream().map(p -> p.getFileName().toString()).collect(Collectors.toList());
-            for (Map.Entry<String, HermesInstance> e : this.instanceMap.entrySet()) {
+            for (Map.Entry<String, HermesInstance> e : new HashSet<>(this.instanceMap.entrySet())) {
                 if (!infoFileNames.contains(e.getKey())) {
                     e.getValue().destroy();
                     this.instanceMap.remove(e.getKey());
