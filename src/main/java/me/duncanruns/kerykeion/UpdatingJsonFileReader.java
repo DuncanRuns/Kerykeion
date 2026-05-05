@@ -3,6 +3,7 @@ package me.duncanruns.kerykeion;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,10 +30,9 @@ class UpdatingJsonFileReader {
         if (!Files.exists(this.path)) return Optional.empty();
         long mTime = Files.getLastModifiedTime(this.path).toMillis();
         if (this.lastModified == mTime) return Optional.empty();
-        String contents = new String(Files.readAllBytes(this.path));
         try {
-            this.json = Kerykeion.GSON.fromJson(contents, JsonObject.class);
-        } catch (JsonSyntaxException e) {
+            this.json = Kerykeion.GSON.fromJson(new String(Files.readAllBytes(this.path)), JsonObject.class);
+        } catch (JsonSyntaxException | EOFException e) {
             this.failures++;
             if (this.failures > 10) { // Extremely unlikely that 10 reads in a row happen in the middle of a write (please do not punish me murphy)
                 this.failures = 0;
