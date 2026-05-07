@@ -40,6 +40,7 @@ class UpdatingJsonFileReader {
             }
             return Optional.empty();
         }
+        this.failures = 0;
         if(this.json == null) return Optional.empty(); // Invalid json, force a re-read next time
         this.lastModified = mTime;
         return Optional.of(this.json);
