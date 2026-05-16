@@ -163,9 +163,9 @@ public final class Kerykeion {
     private static void tickInstance() {
         InstanceTracker.TickResult result = instanceTracker.tick();
         instanceListeners.forEach(lis -> {
+            result.closedInstances.forEach(lis::onInstanceClosed);
             result.existingInstances.forEach(i -> lis.onNewInstance(i, false));
             result.newInstances.forEach(i -> lis.onNewInstance(i, true));
-            result.closedInstances.forEach(lis::onInstanceClosed);
         });
     }
 
