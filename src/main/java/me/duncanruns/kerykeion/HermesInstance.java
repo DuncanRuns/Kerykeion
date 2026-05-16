@@ -6,27 +6,63 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static me.duncanruns.kerykeion.Kerykeion.GSON;
+import static me.duncanruns.kerykeion.Kerykeion.errorLogger;
+
 class HermesInstance {
     private final JsonObject json;
     private final InstanceInfo instanceInfo;
-    private final Path infoFilePath;
+    final Path infoFilePath;
+    private final boolean deadFile;
 
     final long infoFileLastModified;
 
     boolean closing = false;
     RandomAccessFile aliveFile = null;
+    boolean consideredOpen = false;
+
+
+    public static HermesInstance create(Path infoFilePath) {
+        String contents;
+        long millis;
+        try {
+            millis = Files.getLastModifiedTime(infoFilePath).toMillis();
+            contents = new String(Files.readAllBytes(infoFilePath), Charset.defaultCharset());
+        } catch (IOException e) {
+            errorLogger.accept("Failed to read instance info file", e);
+            return null;
+        }
+        JsonObject json;
+        try {
+            json = GSON.fromJson(contents, JsonObject.class);
+        } catch (Exception e) {
+            errorLogger.accept("Failed to parse instance info file", e);
+            return new HermesInstance(infoFilePath, millis);
+        }
+        return new HermesInstance(json, millis, infoFilePath);
+    }
 
     public HermesInstance(JsonObject json, long mTime, Path infoFilePath) {
         this.json = json;
+        this.instanceInfo = tryCreateInstanceInfo(json);
         this.infoFileLastModified = mTime;
         this.infoFilePath = infoFilePath;
-        this.instanceInfo = tryCreateInstanceInfo(json);
+        this.deadFile = false;
+    }
+
+    public HermesInstance(Path infoFilePath, long mTime) {
+        this.json = null;
+        this.instanceInfo = null;
+        this.infoFileLastModified = mTime;
+        this.infoFilePath = infoFilePath;
+        this.deadFile = true;
     }
 
     private static InstanceInfo tryCreateInstanceInfo(JsonObject json) {
@@ -34,10 +70,11 @@ class HermesInstance {
         try {
             instanceInfo = Kerykeion.GSON.fromJson(json, InstanceInfo.class);
         } catch (JsonSyntaxException | InvalidPathException e) {
-            Kerykeion.errorLogger.accept("Failed to parse instance info", e);
+            errorLogger.accept("Failed to parse instance info", e);
         }
         return instanceInfo;
     }
+
 
     public JsonObject getInstanceInfoJson() {
         return this.json.deepCopy();
@@ -51,29 +88,6 @@ class HermesInstance {
         }
     }
 
-    public InstanceInfo getInstanceInfo() {
-        return this.instanceInfo;
-    }
-
-    /**
-     * An instance being closed does not necessarily mean that the actual Minecraft is closed, just this object
-     * representing it is.
-     *
-     * @return true if the instance is closing or closed, false otherwise.
-     */
-    public boolean isClosing() {
-        return this.closing;
-    }
-
-    void destroy() {
-        this.close();
-        try {
-            Files.deleteIfExists(this.infoFilePath);
-        } catch (IOException e) {
-            Kerykeion.errorLogger.accept("Failed to delete instance info file", e);
-        }
-    }
-
     void close() {
         synchronized (this) {
             if (this.closing) return;
@@ -84,15 +98,11 @@ class HermesInstance {
                 this.aliveFile.close();
             }
         } catch (IOException e) {
-            Kerykeion.errorLogger.accept("Failed to close alive file", e);
+            errorLogger.accept("Failed to close alive file", e);
         }
     }
 
-    boolean shouldDestroy() {
-        return !this.closing && this.getGameDir() != null && this.instanceInfo.pid != null && !this.isAliveFileValid();
-    }
-
-    private boolean isAliveFileValid() {
+    public boolean isAliveFileValid() {
         assert this.getGameDir() != null;
         assert this.instanceInfo.pid != null;
         Path alivePath = this.getGameDir().resolve("hermes").resolve("alive");
@@ -105,15 +115,28 @@ class HermesInstance {
                 if (l != this.instanceInfo.pid) return false;
             }
             this.aliveFile.seek(8);
-            return Math.abs(System.currentTimeMillis() - this.aliveFile.readLong()) < 5000;
+            return Math.abs(System.currentTimeMillis() - this.aliveFile.readLong()) < 10000;
         } catch (IOException e) {
-            Kerykeion.errorLogger.accept("Failed to read alive file", e);
+            errorLogger.accept("Failed to read alive file", e);
             return false;
         }
     }
 
     public Path getWorldLogPath() {
         return KerykeionUtil.resolveGameDirRelativePath(this.getGameDir(), this.instanceInfo.worldLogRelPath);
+    }
+
+    public void reconsider() {
+        this.consideredOpen = (!this.deadFile) && (!this.closing) && this.isAliveFileValid();
+    }
+
+    public boolean infoFileHasBeenModified() {
+        try {
+            return Files.getLastModifiedTime(this.infoFilePath).toMillis() != this.infoFileLastModified;
+        } catch (IOException e) {
+            errorLogger.accept("Failed to get last modified time of info file", e);
+        }
+        return false;
     }
 
     public static class InstanceInfo {
