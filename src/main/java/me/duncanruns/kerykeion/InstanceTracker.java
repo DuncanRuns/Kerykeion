@@ -2,6 +2,7 @@ package me.duncanruns.kerykeion;
 
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -21,11 +22,13 @@ class InstanceTracker {
         TickResult result = new TickResult(this.firstTick);
         this.updateInstanceMap();
         this.updatedOpened(result);
+        if (this.firstTick) this.tryDeleteInvalidFiles();
         this.firstTick = false;
         return result;
     }
 
     private void updateInstanceMap() {
+        this.instanceMap.values().removeIf(HermesInstance::infoFileHasBeenModified);
         if (!Files.isDirectory(HERMES_GLOBAL_INSTANCES_PATH)) return;
         Collection<Path> infoFilePaths = retrieveInfoFilePaths(t -> errorLogger.accept("Failed to list instances folder", t));
         if (infoFilePaths == null) return;
@@ -58,6 +61,17 @@ class InstanceTracker {
             if (i.consideredOpen) {
                 result.reportOpen(i);
                 this.reportedInstances.add(i);
+            }
+        });
+    }
+
+    private void tryDeleteInvalidFiles() {
+        this.instanceMap.values().forEach(i -> {
+            if (i.consideredOpen) return;
+            try {
+                Files.deleteIfExists(i.infoFilePath);
+            } catch (IOException ignored) {
+                // Damn that sucks, I guess we'll have a little bit of memory used to keep track of the dead file
             }
         });
     }

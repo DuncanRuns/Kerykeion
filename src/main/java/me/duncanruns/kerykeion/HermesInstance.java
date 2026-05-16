@@ -42,6 +42,7 @@ class HermesInstance {
         JsonObject json;
         try {
             json = GSON.fromJson(contents, JsonObject.class);
+            if (json == null) throw new IllegalStateException("Json parsed into null (invalid json)");
         } catch (Exception e) {
             errorLogger.accept("Failed to parse instance info file", e);
             return new HermesInstance(infoFilePath, millis);
@@ -110,11 +111,9 @@ class HermesInstance {
         try {
             if (this.aliveFile == null) {
                 this.aliveFile = new RandomAccessFile(alivePath.toFile(), "r");
-                this.aliveFile.seek(0);
-                long l = this.aliveFile.readLong();
-                if (l != this.instanceInfo.pid) return false;
             }
-            this.aliveFile.seek(8);
+            this.aliveFile.seek(0);
+            if (this.aliveFile.readLong() != this.instanceInfo.pid) return false;
             return Math.abs(System.currentTimeMillis() - this.aliveFile.readLong()) < 10000;
         } catch (IOException e) {
             errorLogger.accept("Failed to read alive file", e);
