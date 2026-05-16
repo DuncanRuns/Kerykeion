@@ -130,6 +130,7 @@ class HermesInstance {
     }
 
     public boolean infoFileHasBeenModified() {
+        if (!Files.exists(this.infoFilePath)) return false;
         try {
             return Files.getLastModifiedTime(this.infoFilePath).toMillis() != this.infoFileLastModified;
         } catch (IOException e) {
