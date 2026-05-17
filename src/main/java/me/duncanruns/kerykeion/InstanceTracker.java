@@ -95,7 +95,7 @@ class InstanceTracker {
 
 
     public Collection<HermesInstance> getInstances() {
-        return null;
+        return this.reportedInstances;
     }
 
     static class TickResult {
