@@ -18,7 +18,6 @@ public final class Kerykeion {
     private static final List<HermesInstanceListener> instanceListeners = new ArrayList<>();
     private static final List<HermesStateListener> stateListeners = new ArrayList<>();
     private static final List<HermesWorldLogListener> worldLogListeners = new ArrayList<>();
-    private static final List<HermesRestrictedPlayLogListener> livePlayLogListeners = new ArrayList<>();
     private static long tickInterval = Long.MAX_VALUE;
 
     static BiConsumer<String, Throwable> errorLogger = (s, throwable) -> System.err.println(s + "\n" + throwable);
@@ -71,13 +70,6 @@ public final class Kerykeion {
             worldLogListeners.add(HermesWorldLogListener.wrap((HermesWorldLogListener) listener, executor));
             matched = true;
         }
-        if (listener instanceof HermesRestrictedPlayLogListener) {
-            livePlayLogListeners.add(HermesRestrictedPlayLogListener.wrap((HermesRestrictedPlayLogListener) listener, executor));
-            if (!worldLogListeners.contains(livePlayLogTracker)) {
-                worldLogListeners.add(livePlayLogTracker);
-            }
-            matched = true;
-        }
         if (!matched) {
             throw new IllegalArgumentException("Unknown listener type! Please implement one of the more specific interfaces.");
         }
@@ -103,7 +95,7 @@ public final class Kerykeion {
     public static synchronized void start(boolean tickOnce) {
         if (started) return;
 
-        if (instanceListeners.isEmpty() && stateListeners.isEmpty() && worldLogListeners.isEmpty() && livePlayLogListeners.isEmpty()) {
+        if (instanceListeners.isEmpty() && stateListeners.isEmpty() && worldLogListeners.isEmpty()) {
             throw new IllegalStateException("No listeners added! Add at least one listener before starting!");
         }
 
@@ -146,13 +138,6 @@ public final class Kerykeion {
         if (!stateListeners.isEmpty()) {
             tickState();
         }
-        if (!livePlayLogListeners.isEmpty()) {
-            tickLivePlayLog();
-        }
-    }
-
-    private static void tickLivePlayLog() {
-        livePlayLogTracker.tick(entryInfo -> livePlayLogListeners.forEach(lis -> lis.onLivePlayLogEntry(entryInfo.instanceInfo, entryInfo.worldPath, entryInfo.line.clone())));
     }
 
     private static void tickState() {
