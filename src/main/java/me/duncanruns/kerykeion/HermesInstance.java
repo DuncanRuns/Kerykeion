@@ -140,16 +140,16 @@ class HermesInstance {
     }
 
     public static class InstanceInfo {
-        public final Long pid;
+        public Long pid;
         @SerializedName("game_dir")
-        public final String gameDir;
+        public String gameDir;
         @SerializedName("game_version")
-        public final String gameVersion;
+        public String gameVersion;
         @SerializedName("world_log")
-        public final JsonObject worldLogRelPath;
+        public JsonObject worldLogRelPath;
         @SerializedName("is_server")
-        public final Boolean isServer;
-        public final List<Mod> mods;
+        public Boolean isServer;
+        public List<Mod> mods;
 
         public InstanceInfo(Long pid, String gameDir, String gameVersion, JsonObject worldLogRelPath, Boolean isServer, List<Mod> mods) {
             this.pid = pid;
